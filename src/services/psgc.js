@@ -41,6 +41,18 @@ export const fetchCities = async (provinceCode) => {
   }
 };
 
+// Fetch cities directly by region code (for NCR which has no provinces)
+export const fetchCitiesByRegion = async (regionCode) => {
+  try {
+    const response = await fetch(`${PSGC_BASE_URL}/regions/${regionCode}/cities-municipalities`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching cities by region:', error);
+    return [];
+  }
+};
+
 // Fetch barangays by city/municipality code
 export const fetchBarangays = async (cityCode) => {
   try {
