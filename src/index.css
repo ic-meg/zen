@@ -1,0 +1,28 @@
+
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair/PlayfairDisplay-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter/Inter_18pt-Regular.ttf') format('truetype'); 
+}
+
+
+.inter {
+  font-family: 'Inter', sans-serif;
+}
+
+.playfair {
+  font-family: 'Playfair Display', serif;
+}
+
+.matcha {
+    color: #4A7C59;
+}
+
+.cream {
+    background-color: #F5F3EF;
+}
