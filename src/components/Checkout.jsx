@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { fetchRegions, fetchProvinces, fetchCities, fetchBarangays, getFullAddressDetails, getPostalCodeForCity, searchPostalCodeByMunicipality } from '../services/psgc'
+import { fetchRegions, fetchProvinces, fetchCities, fetchCitiesByRegion, fetchBarangays, getFullAddressDetails, getPostalCodeForCity, searchPostalCodeByMunicipality } from '../services/psgc'
 
 const Checkout = () => {
   const { items, getCartTotal } = useCart()
@@ -61,20 +61,41 @@ const Checkout = () => {
     })
 
     if (regionCode) {
-      setLocationData(prev => ({ 
-        ...prev, 
-        provinces: [],
-        cities: [],
-        barangays: [],
-        loading: { ...prev.loading, provinces: true }
-      }))
+      const isNCR = regionCode === '130000000' || regionCode === '13'
       
-      const provinces = await fetchProvinces(regionCode)
-      setLocationData(prev => ({ 
-        ...prev, 
-        provinces,
-        loading: { ...prev.loading, provinces: false }
-      }))
+      if (isNCR) {
+        // For NCR, skip provinces and directly load cities
+        setLocationData(prev => ({ 
+          ...prev, 
+          provinces: [],
+          cities: [],
+          barangays: [],
+          loading: { ...prev.loading, cities: true }
+        }))
+        
+        const cities = await fetchCitiesByRegion(regionCode)
+        setLocationData(prev => ({ 
+          ...prev, 
+          cities,
+          loading: { ...prev.loading, cities: false }
+        }))
+      } else {
+        // For other regions, load provinces first
+        setLocationData(prev => ({ 
+          ...prev, 
+          provinces: [],
+          cities: [],
+          barangays: [],
+          loading: { ...prev.loading, provinces: true }
+        }))
+        
+        const provinces = await fetchProvinces(regionCode)
+        setLocationData(prev => ({ 
+          ...prev, 
+          provinces,
+          loading: { ...prev.loading, provinces: false }
+        }))
+      }
     } else {
       setLocationData(prev => ({ 
         ...prev, 
@@ -125,7 +146,6 @@ const Checkout = () => {
     if (cityCode) {
       const selectedCity = locationData.cities.find(city => city.code === cityCode);
       cityName = selectedCity ? selectedCity.name : '';
-
     }
     
     setFormData({
@@ -136,22 +156,17 @@ const Checkout = () => {
     })
 
     if (cityCode && cityName) {
-
-      
       try {
         // Auto-fill postal code using use-postal-ph
         const postalCode = getPostalCodeForCity(cityName);
-
         
         if (postalCode) {
-
           setFormData(prev => ({
             ...prev,
             city: cityCode,
             barangay: '',
             zipCode: postalCode
           }));
-        } else {
         }
       } catch (error) {
         console.error('Error getting postal code:', error);
@@ -243,7 +258,9 @@ const Checkout = () => {
       newErrors.region = 'Please select a region'
     }
 
-    if (!formData.province) {
+    // Province is only required for non-NCR regions
+    const isNCR = formData.region === '130000000' || formData.region === '13'
+    if (!isNCR && !formData.province) {
       newErrors.province = 'Please select a province'
     }
 
@@ -429,31 +446,33 @@ const Checkout = () => {
                   )}
                 </div>
 
-                {/* Province */}
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2 inter">
-                    Province <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="province"
-                    value={formData.province}
-                    onChange={handleProvinceChange}
-                    className={`w-full px-4 py-3 border rounded focus:outline-none inter ${
-                      errors.province ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-500'
-                    }`}
-                    disabled={!formData.region || locationData.loading.provinces}
-                  >
-                    <option value="">Select Province</option>
-                    {locationData.provinces.map((province) => (
-                      <option key={province.code} value={province.code}>
-                        {province.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.province && (
-                    <p className="mt-1 text-sm text-red-600 inter">{errors.province}</p>
-                  )}
-                </div>
+                {/* Province - Hidden for NCR */}
+                {!(formData.region === '130000000' || formData.region === '13') && (
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-2 inter">
+                      Province <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="province"
+                      value={formData.province}
+                      onChange={handleProvinceChange}
+                      className={`w-full px-4 py-3 border rounded focus:outline-none inter ${
+                        errors.province ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-500'
+                      }`}
+                      disabled={!formData.region || locationData.loading.provinces}
+                    >
+                      <option value="">Select Province</option>
+                      {locationData.provinces.map((province) => (
+                        <option key={province.code} value={province.code}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.province && (
+                      <p className="mt-1 text-sm text-red-600 inter">{errors.province}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* City, Barangay, ZIP */}
                 <div className="grid grid-cols-3 gap-4">
@@ -468,7 +487,10 @@ const Checkout = () => {
                       className={`w-full px-4 py-3 border rounded focus:outline-none inter ${
                         errors.city ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-gray-500'
                       }`}
-                      disabled={!formData.province || locationData.loading.cities}
+                      disabled={
+                        locationData.loading.cities || 
+                        (!formData.province && !(formData.region === '130000000' || formData.region === '13'))
+                      }
                     >
                       <option value="">Select City</option>
                       {locationData.cities.map((city) => (
