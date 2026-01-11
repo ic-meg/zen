@@ -3,81 +3,16 @@ import { useParams, Link } from 'react-router-dom'
 import Header from './Header.jsx'
 import Cart from './Cart.jsx'
 import { useCart } from '../context/CartContext'
-import whisk from '../assets/images/products/bamboo-whisk.png'
-import chawan from '../assets/images/products/chawan.png'
-import chashaku from '../assets/images/products/chashaku.png'
-import ceremonial from '../assets/images/products/ceremonial.png'
-import set from '../assets/images/products/set.png'
-import sieve from '../assets/images/products/fine-sieve.png'
-
-const products = [
-  { 
-    id: 1, 
-    title: 'Bamboo Whisk', 
-    subtitle: 'Natural Bamboo', 
-    price: 'PHP 490.00', 
-    image: whisk,
-    stock: 15,
-    description: 'Handcrafted from sustainable bamboo, this traditional chasen (tea whisk) is essential for creating the perfect frothy matcha. Each whisk is carefully carved to create the ideal texture and consistency for your tea ceremony.',
-    features: ['100% Natural Bamboo', 'Traditional Handcrafted Design', 'Perfect for Matcha Preparation', 'Durable and Long-lasting']
-  },
-  { 
-    id: 2, 
-    title: 'Chawan', 
-    subtitle: 'Natural Bamboo', 
-    price: 'PHP 2,800', 
-    image: chawan,
-    stock: 8,
-    description: 'This beautiful ceramic tea bowl embodies the essence of Japanese tea ceremony. Crafted with attention to detail, it provides the perfect vessel for enjoying your matcha in traditional style.',
-    features: ['Premium Ceramic Material', 'Traditional Japanese Design', 'Perfect Size for Tea Ceremony', 'Easy to Clean and Maintain']
-  },
-  { 
-    id: 3, 
-    title: 'Chashaku', 
-    subtitle: 'Natural Bamboo', 
-    price: 'PHP 430.00', 
-    image: chashaku,
-    stock: 23,
-    description: 'The traditional bamboo tea scoop used for measuring the perfect amount of matcha powder. Each chashaku is individually crafted to ensure precision in your tea preparation.',
-    features: ['Hand-carved Bamboo', 'Traditional Measurements', 'Lightweight and Durable', 'Essential Tea Ceremony Tool']
-  },
-  { 
-    id: 4, 
-    title: 'Set', 
-    subtitle: 'Ceramic Set', 
-    price: 'PHP 3,200', 
-    image: set,
-    stock: 5,
-    description: 'Complete tea ceremony set including everything you need to begin your matcha journey. This comprehensive collection brings authentic Japanese tea culture to your home.',
-    features: ['Complete Tea Ceremony Kit', 'Premium Quality Materials', 'Perfect for Beginners', 'Beautiful Gift Set']
-  },
-  { 
-    id: 5, 
-    title: 'Fine Sieve', 
-    subtitle: 'Stainless', 
-    price: 'PHP 350.00', 
-    image: sieve,
-    stock: 18,
-    description: 'Essential for achieving silky smooth matcha, this fine mesh sieve removes any lumps from your tea powder, ensuring a perfect, frothy consistency every time.',
-    features: ['Ultra-fine Mesh', 'Stainless Steel Construction', 'Easy to Clean', 'Professional Quality']
-  },
-  { 
-    id: 6, 
-    title: 'Ceremonial', 
-    subtitle: 'Special', 
-    price: 'PHP 4,500', 
-    image: ceremonial,
-    stock: 3,
-    description: 'Premium ceremonial grade matcha powder sourced directly from traditional Japanese tea gardens. Experience the authentic taste and vibrant green color of this exceptional tea.',
-    features: ['Ceremonial Grade Quality', 'Direct from Japan', 'Vibrant Green Color', 'Rich, Complex Flavor']
-  },
-]
+import { useProduct } from '../hooks/useProducts'
 
 const Description = () => {
   const { id } = useParams()
-  const product = products.find(p => p.id === parseInt(id))
   const [isCartOpen, setIsCartOpen] = useState(false)
   const { addToCart } = useCart()
+  
+  // Fetch product from database
+  const { data: productResponse, isLoading, error } = useProduct(id)
+  const product = productResponse?.data
   
   const handleCartClick = () => {
     setIsCartOpen(true)
@@ -88,7 +23,13 @@ const Description = () => {
   }
 
   const handleAddToCart = () => {
-    addToCart(product)
+    addToCart({
+      id: product.id,
+      title: product.title,
+      subtitle: product.subtitle,
+      price: product.price,
+      image: product.image
+    })
     setIsCartOpen(true) // Open cart after adding item
   }
 
@@ -105,13 +46,52 @@ const Description = () => {
     }
   }
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="h-screen">
+        <Header onCartClick={handleCartClick} />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-matcha mx-auto mb-4"></div>
+            <p className="text-gray-600 inter">Loading product...</p>
+          </div>
+        </div>
+        <Cart isOpen={isCartOpen} onClose={handleCartClose} />
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="h-screen">
+        <Header onCartClick={handleCartClick} />
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <p className="text-red-600 inter mb-4">Failed to load product</p>
+            <Link to="/" className="bg-matcha text-white px-4 py-2 rounded-md hover:bg-green-800 inter">
+              Return to Home
+            </Link>
+          </div>
+        </div>
+        <Cart isOpen={isCartOpen} onClose={handleCartClose} />
+      </div>
+    )
+  }
+
+  // Product not found
   if (!product) {
     return (
-      <div>
+      <div className="h-screen">
         <Header onCartClick={handleCartClick} />
-        <div className="max-w-4xl mx-auto px-6 py-12 text-center">
-          <h1 className="text-2xl mb-4">Product not found</h1>
-          <Link to="/" className="text-green-700 underline">Return to Home</Link>
+        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <h1 className="text-2xl mb-4 playfair">Product not found</h1>
+            <Link to="/" className="bg-matcha text-white px-4 py-2 rounded-md hover:bg-green-800 inter">
+              Return to Home
+            </Link>
+          </div>
         </div>
         <Cart isOpen={isCartOpen} onClose={handleCartClose} />
       </div>
@@ -127,9 +107,12 @@ const Description = () => {
           {/* Product Image */}
           <div className="relative h-full cream flex items-center justify-center">
             <img 
-              src={product.image} 
+              src={product.image || '/placeholder-image.png'} 
               alt={product.title} 
               className="w-full h-full object-contain"
+              onError={(e) => {
+                e.target.src = '/placeholder-image.png' // Fallback for broken images
+              }}
             />
           </div>
           
@@ -137,7 +120,9 @@ const Description = () => {
           <div className="cream flex flex-col justify-center px-12 py-16 h-full">
             <div className="max-w-md mb-5">
               <h1 className="text-3xl playfair mb-6 tracking-wide">{product.title.toUpperCase()}</h1>
-              <p className="text-xl playfair text-gray-600 mb-4">{product.price}</p>
+              <p className="text-xl playfair text-gray-600 mb-4">
+                ₱{product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </p>
               
               {/* Stock Display */}
               <div className="mb-8">
@@ -147,7 +132,15 @@ const Description = () => {
               </div>
               
               <div className="mb-12">
-                <p className="text-gray-700 leading-relaxed playfair text-lg">{product.description}</p>
+                <h3 className="text-lg playfair mb-3 text-gray-800">{product.subtitle}</h3>
+                {product.description && (
+                  <p className="text-gray-700 leading-relaxed inter text-base mb-6">
+                    {product.description}
+                  </p>
+                )}
+                <p className="text-gray-600 leading-relaxed playfair text-lg">
+                  Experience authentic Japanese tea culture with this premium product, carefully crafted to bring the zen lifestyle to your daily routine.
+                </p>
               </div>
               
               <button 
