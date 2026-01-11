@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Product {
+  id          String  @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String? @db.Text
+  price       Decimal @db.Decimal(10, 2)
+  stock       Int     @default(0)
+  category    String  // Tools, Bowls, Sets, Matcha
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  role                  UserRole  @default(USER)
+  isEmailVerified       Boolean   @default(false)
+  verificationCode      String?
+  verificationCodeExpiry DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  carts  Cart[]
+  orders Order[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  price     Decimal  @db.Decimal(10, 2) // Store price at time of adding
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId]) // Prevent duplicate items in same cart
+  @@map("cart_items")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String?
+  orderNumber     String      @unique
+  status          OrderStatus @default(PENDING)
+  
+  // Customer information
+  customerEmail   String
+  customerFirstName String
+  customerLastName  String
+  customerPhone     String?
+  
+  // Address information (matches your PSGC form)
+  addressStreet   String
+  addressRegion   String
+  addressProvince String?     // Optional for NCR
+  addressCity     String
+  addressBarangay String
+  addressZipCode  String
+  
+  // Order totals
+  subtotal        Decimal @db.Decimal(10, 2)
+  shipping        Decimal @db.Decimal(10, 2) @default(50.00)
+  total           Decimal @db.Decimal(10, 2)
+  
+  // Payment information
+  paymentId       String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   String? // COD or PAYMONGO
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user       User?       @relation(fields: [userId], references: [id])
+  orderItems OrderItem[]
+  
+  @@map("orders")
+}
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  title     String  // Store product title at time of order
+  subtitle  String? // Store subtitle at time of order
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2) // Store price at time of order
+  subtotal  Decimal @db.Decimal(10, 2) // quantity * price
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String?       @unique
+  paymentIntentId String        @unique // PayMongo payment intent ID
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("PHP")
+  status          PaymentStatus @default(PENDING)
+  
+  // PayMongo specific fields
+  paymentMethod   String?
+  clientKey       String?
+  
+  // Webhook data
+  webhookData     Json?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("payments")
+}
