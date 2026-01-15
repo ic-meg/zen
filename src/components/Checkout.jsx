@@ -805,8 +805,8 @@ const Checkout = () => {
                         Pay in cash when your order is delivered to your doorstep
                       </p>
                       <div className="flex items-center space-x-2 mt-2">
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded inter">✓ No online payment needed</span>
-                        <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded inter">📦 Pay upon delivery</span>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded inter"> No online payment needed</span>
+                        <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded inter"> Pay upon delivery</span>
                       </div>
                     </div>
                   </div>

@@ -495,12 +495,6 @@ const ProductManagement = () => {
           </div>
           <div className="flex space-x-3">
             <button
-              onClick={() => refetch()}
-              className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors inter font-medium"
-            >
-              🔄 Refresh
-            </button>
-            <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="bg-matcha text-white px-6 py-3 rounded-md hover:bg-green-800 transition-colors inter font-medium"
             >

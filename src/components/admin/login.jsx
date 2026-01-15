@@ -27,8 +27,10 @@ const Login = () => {
   const handleEmailSubmit = async (e) => {
     e.preventDefault()
     if (formData.email) {
-      if (formData.email === 'admin@gmail.com') {
-        setUserLoggedIn(formData.email)
+      const normalizedEmail = formData.email.trim().toLowerCase()
+
+      if (normalizedEmail === 'admin@gmail.com') {
+        setUserLoggedIn(normalizedEmail)
         
         // Migrate cart
         migrateAnonymousCart()
@@ -53,13 +55,15 @@ const Login = () => {
           email: formData.email,
           code: formData.code
         })
-        
-        setUserLoggedIn(formData.email)
+
+        // Ensure the frontend user state matches backend response when available
+        const emailToSet = result?.user?.email || formData.email
+        setUserLoggedIn(emailToSet)
         
         migrateAnonymousCart()
         
         // Redirect based on user type
-        if (result.user?.role === 'ADMIN' || result.user?.email === 'admin@gmail.com') {
+        if (result.user?.role === 'ADMIN' || (result.user?.email || formData.email).toLowerCase() === 'admin@gmail.com') {
           navigate('/admin/products')
         } else {
           navigate('/')
@@ -112,9 +116,9 @@ const Login = () => {
                     placeholder="Enter your email address"
                     disabled={sendCodeMutation.isLoading}
                   />
-                  {/* <p className="text-xs text-gray-500 inter mt-1">
+                  <p className="text-xs text-gray-500 inter mt-1">
                     Use admin@gmail.com for admin access
-                  </p> */}
+                  </p>
                 </div>
 
                 {/* Submit Button */}
