@@ -1,98 +1,130 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# zen-backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This README documents the backend service for the "zen" project with a focus on the language and technology stack and the API endpoints (inferred from the source folders). It is intended as a quick reference for developers and API consumers.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Overview
 
-## Description
+The backend is a TypeScript Node.js application built with the NestJS framework. It provides REST endpoints for authentication, product and order management, cart operations, payments, and file uploads. The project uses Prisma as the ORM and includes database migrations and seed scripts.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Language and tech stack
 
-## Project setup
+- Language: TypeScript (compiled to Node.js)
+- Runtime: Node.js (v16+ recommended)
+- Framework: NestJS (modular, controller/service pattern)
+- ORM: Prisma (schema located in `prisma/schema.prisma`)
+- Database: PostgreSQL (inferred; Prisma supports PostgreSQL; replace with your provider in `DATABASE_URL`)
+- Authentication: JWT (JSON Web Tokens)
+- Payment integration: Paymongo (service helpers located in `src/services/paymongoServices.js`)
+- File uploads: Uploads handled via an uploads module (multer or cloud provider configuration may apply)
+- Testing: Jest (standard NestJS testing setup exists under `test/`)
+
+## API conventions
+
+- Base URL (development): http://localhost:3000
+- Content types: application/json for API requests, multipart/form-data for file uploads
+- Authentication: Bearer token via the `Authorization: Bearer <token>` header for protected routes
+- Role-based guards: some endpoints (product management, order management) are expected to be protected and restricted to admin users
+
+## Inferred endpoints
+
+The following endpoints are inferred from the backend folders and typical REST patterns. These may not list every route or exact query parameters — consult the controller source files for precise request/response shapes.
+
+- Auth
+  - POST /auth/register — create a new user (email, password)
+  - POST /auth/login — authenticate and receive JWT
+  - GET /auth/verify?token= — email verification (if implemented)
+  - POST /auth/refresh — refresh access token (optional)
+
+- Products
+  - GET /products — list products (pagination / filters optional)
+  - GET /products/:id — get product details
+  - POST /products — create product (admin)
+  - PUT /products/:id — update product (admin)
+  - DELETE /products/:id — delete product (admin)
+
+- Cart
+  - GET /cart — get current user's cart
+  - POST /cart — add item to cart
+  - PUT /cart — update cart item quantity
+  - DELETE /cart/:itemId — remove item from cart
+
+- Orders
+  - POST /orders — create an order from cart / checkout
+  - GET /orders — list orders for user (admin can list all)
+  - GET /orders/:id — order details
+  - PUT /orders/:id/status — update order status (admin)
+
+- Payments
+  - POST /payments — initiate payment / create payment intent (Paymongo)
+  - POST /payments/webhook — payment provider webhook (verify signatures)
+
+- Uploads
+  - POST /uploads — upload files (images for products, etc.)
+
+Notes: exact route names may vary (for example `/payments/create` or `/payments/charge`). Please check `src/` controller files (for example `src/payments/*`, `src/products/*`, `src/auth/*`, `src/cart/*`, `src/orders/*`) to confirm the exact paths and payloads.
+
+## Environment variables
+
+Create a `.env` file in the `zen-backend` root (or provide environment variables in your deployment). Typical variables used by this backend include:
+
+- PORT=3000
+- NODE_ENV=development
+- DATABASE_URL=postgresql://user:pass@host:port/dbname
+- JWT_SECRET=your_jwt_secret
+- JWT_EXPIRES_IN=1h
+- PAYMONGO_SECRET_KEY=sk_test_...
+- EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS — for transactional emails
+- STORAGE_PROVIDER (local | s3 | cloudinary) — if uploads are configurable
+
+Adjust variables to your environment. The exact variable names used in code may differ; search `process.env` references in the `src/` folder to confirm.
+
+## Local development
+
+1. Install dependencies
 
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
+2. Run database migrations and seed (Prisma)
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npx prisma migrate dev --name init
+npx prisma db seed
 ```
 
-## Run tests
+3. Start the server in watch mode
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
+The API will be available at http://localhost:3000 by default.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Running tests
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Run unit tests and e2e tests with the npm scripts in `package.json`:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run test
+npm run test:e2e
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Admin / protected routes
 
-## Resources
+Product and order management endpoints are typically restricted to admin users. Ensure your JWT contains a role/claim that the backend recognizes, and include the token in the `Authorization` header.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Assumptions and notes
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- This README focuses on the language and tech stack and provides an inferred list of endpoints based on the repository structure. If you want a verbatim, source-derived API reference (full paths, request/response schemas), I can generate one by reading the controller files and producing OpenAPI/Swagger-style documentation.
+- If your project exposes Swagger at runtime (for example `/api` or `/docs`), start the server and visit that path to get the canonical API spec.
 
-## Support
+## Next steps (optional)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Generate an OpenAPI spec from controller decorators and include a `docs/` directory.
+- Add example requests (curl or Postman collection) for each endpoint.
+- Add a small README snippet per controller with request/response examples.
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+See the repository root for license information.
